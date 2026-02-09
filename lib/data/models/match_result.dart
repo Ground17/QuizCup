@@ -68,6 +68,8 @@ class MatchResult extends Equatable {
   final String winnerId;
   final int participant1Score;
   final int participant2Score;
+  final String participant1Name;
+  final String participant2Name;
   final List<MatchQuestionResult> questionResults;
   final bool isUserMatch;
 
@@ -78,11 +80,19 @@ class MatchResult extends Equatable {
     required this.winnerId,
     required this.participant1Score,
     required this.participant2Score,
+    this.participant1Name = '',
+    this.participant2Name = '',
     this.questionResults = const [],
     required this.isUserMatch,
   });
 
   bool get isUserWinner => isUserMatch && winnerId == participant1Id;
+
+  String get winnerName =>
+      winnerId == participant1Id ? participant1Name : participant2Name;
+
+  String get loserName =>
+      winnerId == participant1Id ? participant2Name : participant1Name;
 
   Map<String, dynamic> toJson() {
     return {
@@ -92,6 +102,8 @@ class MatchResult extends Equatable {
       'winnerId': winnerId,
       'participant1Score': participant1Score,
       'participant2Score': participant2Score,
+      'participant1Name': participant1Name,
+      'participant2Name': participant2Name,
       'questionResults': questionResults.map((e) => e.toJson()).toList(),
       'isUserMatch': isUserMatch ? 1 : 0,
     };
@@ -105,6 +117,8 @@ class MatchResult extends Equatable {
       winnerId: json['winnerId'] as String,
       participant1Score: json['participant1Score'] as int,
       participant2Score: json['participant2Score'] as int,
+      participant1Name: json['participant1Name'] as String? ?? '',
+      participant2Name: json['participant2Name'] as String? ?? '',
       questionResults: (json['questionResults'] as List<dynamic>?)
               ?.map((e) => MatchQuestionResult.fromJson(e as Map<String, dynamic>))
               .toList() ??
@@ -121,6 +135,8 @@ class MatchResult extends Equatable {
         winnerId,
         participant1Score,
         participant2Score,
+        participant1Name,
+        participant2Name,
         questionResults,
         isUserMatch,
       ];

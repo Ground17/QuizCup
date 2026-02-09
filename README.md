@@ -1,6 +1,32 @@
-# QuizCup
+# Qrophy
 
 A Flutter quiz tournament app that generates quizzes from any content using Google Gemini AI, then lets you compete in a 1024-player single-elimination tournament against AI opponents.
+
+## How Gemini API is Used
+
+Qrophy uses the **Google Gemini API** (`gemini-3-flash-preview` model via REST) in three distinct ways:
+
+### 1. Quiz Generation
+When creating or adding questions to a project, the app sends content (extracted text from uploaded files, fetched web page text, or a user-written prompt) to Gemini with instructions to generate quiz question-answer pairs. Gemini returns a JSON array of `{"question": "...", "answer": "..."}` objects, which are parsed and stored in the local SQLite database.
+
+- **Endpoint**: `generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent`
+- **Input**: File contents (read as plain text), web page text (HTML stripped), and/or custom prompt
+- **Output**: JSON array of question-answer pairs
+- **Temperature**: 0.7 (for diverse question generation)
+
+### 2. AI Weakness Analysis
+After a tournament, the app collects all of the user's wrong answers (question, correct answer, user's answer) and sends them to Gemini for analysis. Gemini identifies weak areas, common mistake patterns, and provides improvement advice.
+
+- **Input**: List of wrong answers with question text, correct answer, and user's answer
+- **Output**: Free-text analysis (bullet points summarizing weaknesses)
+- **Temperature**: 0.5 (for balanced, focused analysis)
+
+### 3. AI Challenge (Semantic Answer Matching)
+In fill-in-blank rounds (Semifinals/Finals), if the user's answer is marked wrong but they believe it's semantically equivalent (e.g., "green" vs "green color"), they can trigger an AI Challenge. Gemini judges whether the two answers mean the same thing while enforcing strict spelling.
+
+- **Input**: Question text, correct answer, user's answer
+- **Output**: Single word — `ACCEPT` or `REJECT`
+- **Temperature**: 0.0 (for deterministic judging)
 
 ## Features
 
@@ -47,7 +73,7 @@ A Flutter quiz tournament app that generates quizzes from any content using Goog
 | Navigation | GoRouter |
 | Local Database | SQLite (sqflite) |
 | AI / Quiz Generation | Google Gemini API |
-| Animations | Lottie, Confetti |
+| Animations | Confetti |
 | Sensors | sensors_plus |
 | Audio | audioplayers |
 

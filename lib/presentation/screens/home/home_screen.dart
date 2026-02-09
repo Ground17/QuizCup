@@ -13,7 +13,7 @@ class HomeScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('QuizCup'),
+        title: const Text('Qrophy'),
         actions: [
           IconButton(
             icon: const Icon(Icons.person),

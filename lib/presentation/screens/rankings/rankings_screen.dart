@@ -209,7 +209,15 @@ class _RankingCard extends StatelessWidget {
       child: ListTile(
         leading: CircleAvatar(
           backgroundColor: _positionColor,
-          child: position <= 3
+          child: position == 1
+              ? ClipOval(
+                  child: Image.asset(
+                    'assets/images/trophy_icon.png',
+                    width: 24,
+                    height: 24,
+                  ),
+                )
+              : position <= 3
               ? Icon(_positionIcon, color: Colors.white, size: 20)
               : Text(
                   '$position',

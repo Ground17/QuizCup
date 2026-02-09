@@ -27,6 +27,7 @@ class _MatchScreenState extends ConsumerState<MatchScreen> {
   int _aiScore = 0;
   String? _selectedAnswer;
   String _fillBlankAnswer = '';
+  final TextEditingController _fillBlankController = TextEditingController();
   bool _answered = false;
   bool _showResult = false;
   Timer? _timer;
@@ -58,6 +59,7 @@ class _MatchScreenState extends ConsumerState<MatchScreen> {
   @override
   void dispose() {
     _timer?.cancel();
+    _fillBlankController.dispose();
     super.dispose();
   }
 
@@ -316,6 +318,7 @@ class _MatchScreenState extends ConsumerState<MatchScreen> {
         _currentQuestionIndex++;
         _selectedAnswer = null;
         _fillBlankAnswer = '';
+        _fillBlankController.clear();
         _answered = false;
         _showResult = false;
         // Reset turn state for no time limit mode
@@ -412,50 +415,25 @@ class _MatchScreenState extends ConsumerState<MatchScreen> {
         ),
         actionsAlignment: MainAxisAlignment.center,
         actions: [
-          if (userWon) ...[
+          if (_wrongAnswerRecords.isNotEmpty)
             OutlinedButton.icon(
               onPressed: () {
                 Navigator.pop(dialogContext);
-                context.go('/tournament/${widget.tournamentId}');
+                context.push('/analysis/${widget.tournamentId}');
               },
-              icon: const Icon(Icons.account_tree),
-              label: const Text('Bracket'),
+              icon: const Icon(Icons.psychology),
+              label: const Text('Analysis'),
             ),
-            if (_wrongAnswerRecords.isNotEmpty)
-              OutlinedButton.icon(
-                onPressed: () {
-                  Navigator.pop(dialogContext);
-                  context.push('/analysis/${widget.tournamentId}');
-                },
-                icon: const Icon(Icons.psychology),
-                label: const Text('Analysis'),
-              ),
+          if (userWon)
             ElevatedButton.icon(
               onPressed: () {
                 Navigator.pop(dialogContext);
-                context.go('/match/${widget.tournamentId}');
+                context.go('/tournament/${widget.tournamentId}');
               },
               icon: const Icon(Icons.play_arrow),
               label: const Text('Next'),
-            ),
-          ] else ...[
-            OutlinedButton.icon(
-              onPressed: () {
-                Navigator.pop(dialogContext);
-                context.go('/tournament/${widget.tournamentId}');
-              },
-              icon: const Icon(Icons.account_tree),
-              label: const Text('Bracket'),
-            ),
-            if (_wrongAnswerRecords.isNotEmpty)
-              OutlinedButton.icon(
-                onPressed: () {
-                  Navigator.pop(dialogContext);
-                  context.push('/analysis/${widget.tournamentId}');
-                },
-                icon: const Icon(Icons.psychology),
-                label: const Text('Analysis'),
-              ),
+            )
+          else
             ElevatedButton.icon(
               onPressed: () {
                 Navigator.pop(dialogContext);
@@ -464,7 +442,6 @@ class _MatchScreenState extends ConsumerState<MatchScreen> {
               icon: const Icon(Icons.visibility),
               label: const Text('Watch'),
             ),
-          ],
         ],
       ),
     );
@@ -658,6 +635,7 @@ class _MatchScreenState extends ConsumerState<MatchScreen> {
                       const SizedBox(height: 8),
                     ],
                     TextField(
+                      controller: _fillBlankController,
                       enabled: !_answered && (!_noTimeLimit || _isUserTurn),
                       onChanged: (value) => _fillBlankAnswer = value,
                       decoration: const InputDecoration(

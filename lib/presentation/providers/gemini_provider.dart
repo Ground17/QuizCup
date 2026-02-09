@@ -151,7 +151,7 @@ class GeminiService {
             responseType: ResponseType.plain,
             receiveTimeout: const Duration(seconds: 15),
             headers: {
-              'User-Agent': 'QuizCup/1.0',
+              'User-Agent': 'Qrophy/1.0',
             },
           ),
         );

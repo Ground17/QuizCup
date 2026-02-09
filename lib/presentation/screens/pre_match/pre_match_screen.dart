@@ -45,10 +45,10 @@ class _PreMatchScreenState extends ConsumerState<PreMatchScreen> {
                     padding: const EdgeInsets.all(16),
                     child: Column(
                       children: [
-                        const Icon(
-                          Icons.emoji_events,
-                          size: 64,
-                          color: AppColors.gold,
+                        Image.asset(
+                          'assets/images/trophy_icon.png',
+                          width: 64,
+                          height: 64,
                         ),
                         const SizedBox(height: 16),
                         Text(

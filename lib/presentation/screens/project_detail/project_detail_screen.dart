@@ -140,7 +140,7 @@ class ProjectDetailScreen extends ConsumerWidget {
                     onPressed: project.questionCount >= 10
                         ? () => context.push('/pre-match/$projectId')
                         : null,
-                    icon: const Icon(Icons.emoji_events),
+                    icon: Image.asset('assets/images/trophy_icon.png', width: 24, height: 24),
                     label: const Text('Start Tournament'),
                     style: ElevatedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 16),

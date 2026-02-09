@@ -1,7 +1,7 @@
 class AppConstants {
   AppConstants._();
 
-  static const String appName = 'QuizCup';
+  static const String appName = 'Qrophy';
   static const String appVersion = '1.0.0';
 
   // Tournament

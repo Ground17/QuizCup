@@ -58,15 +58,17 @@ class ResultsScreen extends ConsumerWidget {
                         padding: const EdgeInsets.all(16),
                         child: Column(
                           children: [
-                            Icon(
-                              tournament.championId == 'user'
-                                  ? Icons.emoji_events
-                                  : Icons.sports_score,
-                              size: 48,
-                              color: tournament.championId == 'user'
-                                  ? AppColors.gold
-                                  : AppColors.textSecondary,
-                            ),
+                            tournament.championId == 'user'
+                                ? Image.asset(
+                                    'assets/images/trophy_icon.png',
+                                    width: 48,
+                                    height: 48,
+                                  )
+                                : const Icon(
+                                    Icons.sports_score,
+                                    size: 48,
+                                    color: AppColors.textSecondary,
+                                  ),
                             const SizedBox(height: 8),
                             Text(
                               tournament.championId == 'user' ? 'Champion!' : 'Tournament Complete',

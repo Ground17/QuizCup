@@ -2,6 +2,7 @@ import 'dart:math';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 import '../../data/models/tournament.dart';
+import '../../data/models/match_result.dart';
 import '../../data/models/project.dart';
 import '../../data/models/ai_persona.dart';
 import '../../data/models/ranking.dart';
@@ -127,8 +128,18 @@ class TournamentNotifier extends AsyncNotifier<Tournament?> {
     final personas = await ref.read(personasProvider.future);
     final personaMap = {for (final p in personas) p.id: p};
 
+    // Get user name for match records
+    final userProfile = await db.getUserProfile();
+    final userName = userProfile?.name ?? 'Player';
+
+    String getName(String id) {
+      if (id == 'user') return userName;
+      return personaMap[id]?.name ?? 'AI';
+    }
+
     final survivors = List<String>.from(tournament.survivingIds);
     final nextSurvivors = <String>[];
+    final matchResults = <MatchResult>[];
     bool spectatorMode = tournament.spectatorMode;
 
     // Process pairs: 0&1, 2&3, 4&5, ...
@@ -141,23 +152,59 @@ class TournamentNotifier extends AsyncNotifier<Tournament?> {
 
       final p1 = survivors[i];
       final p2 = survivors[i + 1];
-      final isUserMatch = p1 == 'user' || p2 == 'user';
+      final isUserMatch = (p1 == 'user' || p2 == 'user') && !spectatorMode;
 
-      if (isUserMatch && !spectatorMode) {
+      if (isUserMatch) {
         // User's match - result was passed in
-        if (userWon) {
-          nextSurvivors.add('user');
+        final winnerId = userWon ? 'user' : (p1 == 'user' ? p2 : p1);
+        nextSurvivors.add(winnerId);
+        if (!userWon) spectatorMode = true;
+
+        final int p1Score, p2Score;
+        if (p1 == 'user') {
+          p1Score = userScore;
+          p2Score = aiScore;
         } else {
-          final opponentId = p1 == 'user' ? p2 : p1;
-          nextSurvivors.add(opponentId);
-          spectatorMode = true;
+          p1Score = aiScore;
+          p2Score = userScore;
         }
+
+        matchResults.add(MatchResult(
+          matchId: '${tournament.id}_r${tournament.currentRoundIndex}_m${i ~/ 2}',
+          participant1Id: p1,
+          participant2Id: p2,
+          winnerId: winnerId,
+          participant1Score: p1Score,
+          participant2Score: p2Score,
+          participant1Name: getName(p1),
+          participant2Name: getName(p2),
+          isUserMatch: true,
+        ));
       } else {
-        // AI vs AI - simulate based on win rates
-        final winner = _simulateAIvsAI(p1, p2, personaMap);
-        nextSurvivors.add(winner);
+        // AI vs AI - simulate with scores
+        final result = _simulateAIvsAIWithScores(p1, p2, personaMap);
+        nextSurvivors.add(result.winnerId);
+
+        matchResults.add(MatchResult(
+          matchId: '${tournament.id}_r${tournament.currentRoundIndex}_m${i ~/ 2}',
+          participant1Id: p1,
+          participant2Id: p2,
+          winnerId: result.winnerId,
+          participant1Score: result.p1Score,
+          participant2Score: result.p2Score,
+          participant1Name: getName(p1),
+          participant2Name: getName(p2),
+          isUserMatch: false,
+        ));
       }
     }
+
+    // Record round results
+    final round = TournamentRound(
+      roundNumber: tournament.currentRoundIndex,
+      matches: matchResults,
+      isCompleted: true,
+    );
 
     // Determine next status
     final nextStatus = _getNextStatus(tournament.status);
@@ -186,6 +233,7 @@ class TournamentNotifier extends AsyncNotifier<Tournament?> {
     tournament = tournament.copyWith(
       status: nextStatus,
       survivingIds: nextSurvivors,
+      rounds: [...tournament.rounds, round],
       spectatorMode: spectatorMode,
       championId: championId,
       runnerUpId: runnerUpId,
@@ -198,17 +246,39 @@ class TournamentNotifier extends AsyncNotifier<Tournament?> {
     ref.invalidate(tournamentByIdProvider(tournamentId));
   }
 
-  /// Simulate a match between two AI participants.
-  String _simulateAIvsAI(String id1, String id2, Map<String, AIPersona> personaMap) {
+  /// Simulate a match between two AI participants with scores.
+  ({String winnerId, int p1Score, int p2Score}) _simulateAIvsAIWithScores(
+    String id1, String id2, Map<String, AIPersona> personaMap,
+  ) {
     final p1 = personaMap[id1];
     final p2 = personaMap[id2];
 
     final rate1 = p1?.winRate ?? 0.5;
     final rate2 = p2?.winRate ?? 0.5;
 
-    // Probability of p1 winning based on relative win rates
-    final p1WinProb = rate1 / (rate1 + rate2);
-    return _random.nextDouble() < p1WinProb ? id1 : id2;
+    // Simulate 3 questions for each
+    int score1 = 0;
+    int score2 = 0;
+    for (int q = 0; q < AppConstants.questionsPerMatch; q++) {
+      if (_random.nextDouble() < rate1) score1++;
+      if (_random.nextDouble() < rate2) score2++;
+    }
+
+    // Tie → break by win rate ratio
+    if (score1 == score2) {
+      final p1WinProb = rate1 / (rate1 + rate2);
+      if (_random.nextDouble() < p1WinProb) {
+        score1++;
+      } else {
+        score2++;
+      }
+    }
+
+    return (
+      winnerId: score1 > score2 ? id1 : id2,
+      p1Score: score1,
+      p2Score: score2,
+    );
   }
 
   TournamentStatus _getNextStatus(TournamentStatus current) {
